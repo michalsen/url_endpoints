@@ -1,0 +1,6 @@
+; $Id$
+name = URL Endpoints
+description = Link Check API
+package = Other
+core = 7.x
+

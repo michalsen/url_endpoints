@@ -1,0 +1,94 @@
+<?php
+/**
+ * @file
+ * Url Checking
+ */
+
+/**
+ *
+ *  Implements hook_menu()
+ */
+function url_endpoints_menu() {
+  $items['admin/url_endpoints'] = array(
+            'title' => 'URL Endpoints',
+            'page callback' => 'url_endpoints_page',
+            'access arguments' => array('access administration menu'),
+            'description' => 'url_endpoints',
+            'access callback' => TRUE,
+        );
+  $items['urls'] = array(
+    'page callback' => 'urls_callback',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+
+/**
+ *  Permission check for form
+ */
+function url_endpoints_page() {
+  if (user_access('access administration menu')) {
+    return drupal_get_form('url_endpoints_form');
+  }
+}
+
+
+/**
+ *  Build From
+ */
+function url_endpoints_form($form, $form_state) {
+  $form['url_endpoints_key'] = array(
+   '#type' => 'textfield',
+   '#title' => t('URL Check API Key'),
+   '#default_value' => variable_get('url_endpoints_key'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+  $form['#submit'][] = 'url_endpoints_form_submit';
+  return $form;
+}
+
+
+/**
+ *  Set API Key
+ */
+function url_endpoints_form_submit($form, $form_state) {
+  variable_set('url_endpoints_key', $form_state['input']['url_endpoints_key']);
+  drupal_set_message(t('API Key set.'), 'status', TRUE);
+}
+
+
+/**
+ *  Create JSON Endpoint for all URL's in the system
+ */
+function urls_callback() {
+  if ($_REQUEST['key'] == variable_get('url_endpoints_key')) {
+
+    // Alias's
+    $aliases = db_select('url_alias', 'u')
+             ->fields('u', array('alias'))
+             ->execute()
+             ->fetchAll();
+
+    // Redirect's
+    $redirects = db_select('redirect', 'u')
+             ->fields('u', array('source'))
+             ->execute()
+             ->fetchAll();
+
+    // Combine them all!
+    $urls = array();
+      foreach ($aliases as $key => $value) {
+       $urls[] = $value->alias;
+      }
+      foreach ($redirects as $key => $value) {
+       $urls[] = $value->source;
+      }
+
+    return drupal_json_output($urls);
+  }
+}
